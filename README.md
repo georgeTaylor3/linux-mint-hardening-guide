@@ -11,7 +11,7 @@ Written for a real-world setup: LUKS FDE already enabled, a YubiKey 5 NFC, a VPN
 - [Threat model](#threat-model)
 - [Prerequisites](#prerequisites)
 - [Step 1 — Backups first](#step-1--backups-first) ✅ implemented
-- [Step 2 — Patch management](#step-2--patch-management)
+- [Step 2 — Patch management](#step-2--patch-management) ✅ implemented
 - [Step 3 — YubiKey-backed login and sudo](#step-3--yubikey-backed-login-and-sudo)
 - [Step 4 — Firewall and VPN kill switch](#step-4--firewall-and-vpn-kill-switch)
 - [Step 5 — Browser hardening](#step-5--browser-hardening)
@@ -52,15 +52,11 @@ Full-disk encryption protects data at rest if the laptop is stolen. It does **no
 
 ---
 
-## Step 2 — Patch management
+## Step 2 — Patch management ✅ implemented
 
 Security patches, including kernel updates, need to actually land — not sit deferred by an overly conservative update policy or a laptop that's rarely rebooted.
 
-- Raise Mint's update level past the most conservative setting (Update Manager → Edit → Update levels)
-- Install `unattended-upgrades` for automatic security patching
-- Reboot after kernel updates (`needrestart` flags when one is pending)
-
-*Not yet broken out into its own folder — straightforward enough to not need one, but could gain a config/script if automation grows more involved.*
+**➡️ See [`patch-management/`](./patch-management/)** for the full implementation: `unattended-upgrades` scoped to security-only origins, verified against a real pending backlog on this machine, with automatic reboots deliberately left off and syslog logging enabled for auditability.
 
 ---
 
@@ -134,8 +130,8 @@ Confirming swap lives inside the LUKS container rather than an unencrypted parti
 - [x] Local backup (LUKS-encrypted second drive, Restic, versioned) — see [`backups/`](./backups/)
 - [x] Offsite backup leg configured and encrypted client-side — see [`backups/`](./backups/)
 - [x] Backup restore tested successfully — see [`backups/`](./backups/)
-- [ ] `unattended-upgrades` installed and enabled
-- [ ] Mint update level raised past the most conservative setting
+- [x] `unattended-upgrades` installed and enabled — see [`patch-management/`](./patch-management/)
+- [x] Security-only update scoping verified against a real backlog — see [`patch-management/`](./patch-management/)
 - [ ] YubiKey required for `sudo` (recovery path confirmed first)
 - [ ] YubiKey registered as FIDO2/WebAuthn on key accounts
 - [ ] Backup YubiKey registered and stored separately
