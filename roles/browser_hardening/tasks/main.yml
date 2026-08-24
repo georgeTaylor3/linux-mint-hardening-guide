@@ -1,0 +1,91 @@
+---
+# Mirrors browser-hardening/README.md.
+# Installs Brave via its official APT repository, then applies the
+# settings that matter most given this machine's threat model — chiefly
+# WebRTC leak protection, since WebRTC can expose your real IP even
+# through an active VPN tunnel if left on default settings.
+#
+# Brave stores most settings in a JSON preferences file inside the
+# user's profile, but that file is only read at browser startup and can
+# be overwritten by Brave itself in some cases. For settings that must be
+# enforced reliably, we use Chromium/Brave's managed policy mechanism
+# instead (/etc/brave/policies/managed/), which takes precedence over
+# user-set values and doesn't get silently reset.
+
+- name: Install prerequisites for adding the Brave repository
+  ansible.builtin.apt:
+    name:
+      - curl
+      - gpg
+    state: present
+
+- name: Download Brave's GPG signing key
+  ansible.builtin.get_url:
+    url: "https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg"
+    dest: "/usr/share/keyrings/brave-browser-archive-keyring.gpg"
+    mode: "0644"
+
+- name: Add Brave's official APT repository
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main"
+    filename: brave-browser-release
+    state: present
+
+- name: Install Brave
+  ansible.builtin.apt:
+    name: brave-browser
+    state: present
+    update_cache: true
+
+- name: Ensure the managed policy directory exists
+  ansible.builtin.file:
+    path: /etc/brave/policies/managed
+    state: directory
+    mode: "0755"
+
+# Policy key is "WebRtcIPHandling" (NOT "WebRtcIPHandlingPolicy" — an
+# earlier version of this file used the wrong name and Brave silently
+# ignored it as "Unknown policy"; verified via brave://policy).
+# Values: default, default_public_and_private_interfaces,
+# default_public_interface_only, disable_non_proxied_udp.
+# "disable_non_proxied_udp" is the one that actually prevents WebRTC from
+# leaking your real IP outside the VPN tunnel — this is the setting that
+# matters most given this machine already has a verified VPN kill switch.
+- name: Enforce WebRTC leak protection via managed policy (survives profile resets, can't be silently toggled off)
+  ansible.builtin.copy:
+    dest: /etc/brave/policies/managed/webrtc_leak_protection.json
+    content: |
+      {
+        "WebRtcIPHandling": "disable_non_proxied_udp"
+      }
+    mode: "0644"
+
+- name: Enforce HTTPS-only mode via managed policy
+  ansible.builtin.copy:
+    dest: /etc/brave/policies/managed/https_only.json
+    content: |
+      {
+        "HttpsOnlyMode": "force_enabled"
+      }
+    mode: "0644"
+
+- name: Record manual browser hardening steps
+  ansible.builtin.set_fact:
+    manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
+  loop:
+    - ""
+    - "════════════════════════════════════════════════════════"
+    - "  BROWSER HARDENING (Brave) — manual steps"
+    - "════════════════════════════════════════════════════════"
+    - "  Two settings are already enforced via managed policy and can't be"
+    - "  accidentally toggled off: WebRTC leak protection, HTTPS-only mode."
+    - "  Everything below is a per-preference setting, done once in the UI:"
+    - "  1. brave://settings/shields — set Trackers & ads blocking to Aggressive"
+    - "  2. brave://settings/shields — set Block fingerprinting to Standard or Strict"
+    - "  3. brave://settings/privacy — turn OFF 'Use Google services for push messaging'"
+    - "  4. brave://settings/privacy — turn OFF Brave's P3A/product analytics"
+    - "  5. brave://settings/privacy — set cookies to block third-party"
+    - "  6. brave://settings/extensions — audit installed extensions, remove anything unused"
+    - "  7. Disable unused built-in features you don't use: Brave Rewards, Brave Wallet, Brave News"
+    - "  8. TEST the WebRTC fix: connect to VPN, visit a WebRTC leak test site, confirm your real IP does NOT appear alongside the VPN's IP"
+    - "  Full detail: browser-hardening/README.md"

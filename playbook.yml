@@ -72,6 +72,8 @@
       tags: [yubikey_auth]
     - role: backups_setup
       tags: [backups_setup]
+    - role: browser_hardening
+      tags: [browser_hardening]
 
   post_tasks:
     - name: Print manual-step banner and summary
