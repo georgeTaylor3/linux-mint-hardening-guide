@@ -46,7 +46,7 @@ Written for a real-world setup: LUKS FDE already enabled, a YubiKey 5 NFC, a VPN
 - [Step 2 — Patch management](#step-2--patch-management) ✅ implemented
 - [Step 3 — YubiKey-backed login and sudo](#step-3--yubikey-backed-login-and-sudo) ✅ implemented
 - [Step 4 — Firewall and VPN kill switch](#step-4--firewall-and-vpn-kill-switch) ✅ implemented
-- [Step 5 — Browser hardening](#step-5--browser-hardening)
+- [Step 5 — Browser hardening](#step-5--browser-hardening) ✅ implemented
 - [Step 6 — Application isolation](#step-6--application-isolation)
 - [Step 7 — Physical and firmware security](#step-7--physical-and-firmware-security)
 - [Step 8 — Kernel and swap hardening](#step-8--kernel-and-swap-hardening)
