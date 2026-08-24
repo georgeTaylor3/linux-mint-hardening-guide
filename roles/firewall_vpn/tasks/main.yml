@@ -26,6 +26,7 @@
   ansible.builtin.command: ss -tlnp
   register: listening_services
   changed_when: false
+  check_mode: false
 
 - name: Show listening services for manual review
   ansible.builtin.debug:
