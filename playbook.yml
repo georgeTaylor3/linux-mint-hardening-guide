@@ -19,6 +19,50 @@
   become: true
   gather_facts: true
 
+  pre_tasks:
+    # A LUKS-backed root typically shows up as sitting on a "crypt" mapper
+    # device somewhere in its parent chain — e.g. partition -> crypt -> LVM
+    # -> root. lsblk -s (inverse/ancestor mode) walks that full chain rather
+    # than just reporting the leaf device's own type. This is a best-effort
+    # heuristic, not a guarantee — if it fires a false warning, verify
+    # manually with `lsblk` and `cryptsetup status <device>` before trusting
+    # either result.
+    - name: Check whether the root filesystem sits on a LUKS-encrypted (crypt) device
+      ansible.builtin.shell: |
+        set -o pipefail
+        lsblk -s -no TYPE "$(findmnt -no SOURCE /)" 2>/dev/null | grep -c crypt || true
+      args:
+        executable: /bin/bash
+      register: luks_check
+      changed_when: false
+      check_mode: false
+      tags: [luks_check]
+
+    - name: FAIL LOUDLY if full-disk encryption is not detected
+      ansible.builtin.fail:
+        msg: >-
+          ############################################################
+          #  WARNING: Full-disk encryption (LUKS) was NOT detected   #
+          #  on the root filesystem.                                  #
+          #                                                            #
+          #  This CANNOT be added after installation without a full  #
+          #  wipe and reinstall. If this is a fresh Mint install and  #
+          #  you did not choose "Encrypt the new installation" during #
+          #  setup, stop now and reinstall with encryption enabled    #
+          #  before proceeding with anything else in this repo.       #
+          #                                                            #
+          #  If you're SURE this is intentional (e.g. testing in a    #
+          #  VM), re-run with: --skip-tags luks_check                 #
+          ############################################################
+      when: luks_check.stdout | trim == "0"
+      tags: [luks_check]
+
+    - name: Confirm full-disk encryption detected
+      ansible.builtin.debug:
+        msg: "Full-disk encryption detected on root filesystem — proceeding."
+      when: luks_check.stdout | trim != "0"
+      tags: [luks_check]
+
   roles:
     - role: patch_management
       tags: [patch_management]

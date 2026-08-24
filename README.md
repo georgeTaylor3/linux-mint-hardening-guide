@@ -17,10 +17,16 @@ ansible-playbook playbook.yml --connection=local --ask-become-pass           # a
 
 The playbook handles package installs, config file edits, firewall rules, and service enable/disable — everything that's safe to script and idempotent to re-run. It **deliberately stops and prints instructions** for anything that needs a human: YubiKey enrollment, LUKS passphrases, GitHub/Proton logins, PAT tokens. Those steps are documented in each step's own README below — read them before running the playbook so the manual portions aren't a surprise.
 
+**Full-disk encryption precondition:** before anything else runs, the playbook checks that the root filesystem sits on a LUKS-encrypted device and fails loudly if not — this can't be added after the fact without a full reinstall, so it's worth catching immediately rather than discovering it later. If you're intentionally running this somewhere FDE doesn't apply to your threat model (e.g. a VM whose underlying host storage is already encrypted), skip the check explicitly:
+
+```bash
+ansible-playbook playbook.yml --connection=local --ask-become-pass --skip-tags luks_check
+```
+
 | Role | Automated | Manual (playbook prints instructions) |
 |---|---|---|
 | `patch_management` | Everything | — |
-| `firewall_vpn` | UFW rules, sshd disable | Proton VPN kill switch (Proton login required) |
+| `firewall_vpn` | Proton VPN install, UFW rules, sshd disable | Proton VPN login + Advanced kill switch (requires your Proton account) |
 | `yubikey_auth` | Package install, recovery-path precondition check | All PAM edits and YubiKey enrollment — hardware/interactive by nature |
 | `backups_setup` | Tool installation | Drive selection, LUKS setup, repo passwords, bucket creation, PAT setup |
 
@@ -162,7 +168,7 @@ Confirming swap lives inside the LUKS container rather than an unencrypted parti
 - [x] UFW enabled, default-deny inbound — see [`firewall-vpn/`](./firewall-vpn/)
 - [x] Unused inbound services disabled, not just firewalled — see [`firewall-vpn/`](./firewall-vpn/)
 - [x] VPN Advanced kill switch verified with a real disconnect test — see [`firewall-vpn/`](./firewall-vpn/)
-- [x] Ansible playbook available to re-apply mechanical steps to a new machine — see [Quick Start](#quick-start-new-machine)
+- [x] Ansible playbook available to re-apply mechanical steps to a new machine, including a full-disk-encryption precondition check — see [Quick Start](#quick-start-new-machine)
 - [ ] YubiKey registered as FIDO2/WebAuthn on key accounts
 - [ ] Backup YubiKey registered and stored separately
 - [ ] Browser hardened (uBlock Origin, strict tracking protection, HTTPS-Only)
