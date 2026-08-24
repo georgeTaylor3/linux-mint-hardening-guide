@@ -1,7 +1,42 @@
 ---
 # Mirrors firewall-vpn/README.md.
-# UFW and sshd disable are automatable. The VPN kill switch is a GUI
-# setting tied to your Proton account — left as a manual step.
+# UFW, sshd disable, and Proton VPN installation are automatable.
+# The kill switch itself is a GUI setting tied to your Proton account —
+# left as a manual step, since it requires login and should be verified
+# with a real disconnect test, not just a toggle check.
+
+- name: Check if Proton VPN repo package is already installed
+  ansible.builtin.command: dpkg-query -W -f='${Status}' protonvpn-stable-release
+  register: protonvpn_repo_check
+  failed_when: false
+  changed_when: false
+  check_mode: false
+
+- name: Download Proton VPN repository package
+  ansible.builtin.get_url:
+    url: "https://repo.protonvpn.com/debian/dists/stable/main/binary-all/protonvpn-stable-release_1.0.8_all.deb"
+    dest: "/tmp/protonvpn-stable-release_1.0.8_all.deb"
+    mode: "0644"
+  when: "'install ok installed' not in protonvpn_repo_check.stdout"
+  # Note: no checksum is pinned here. If you want to verify integrity,
+  # cross-check the SHA256 against Proton's own official documentation
+  # at https://protonvpn.com/support/official-linux-vpn-debian before
+  # trusting a value from any third-party source.
+
+- name: Install Proton VPN repository package
+  ansible.builtin.apt:
+    deb: "/tmp/protonvpn-stable-release_1.0.8_all.deb"
+  when: "'install ok installed' not in protonvpn_repo_check.stdout"
+
+- name: Update apt cache after adding Proton's repo
+  ansible.builtin.apt:
+    update_cache: true
+  when: "'install ok installed' not in protonvpn_repo_check.stdout"
+
+- name: Install Proton VPN GNOME desktop app
+  ansible.builtin.apt:
+    name: proton-vpn-gnome-desktop
+    state: present
 
 - name: Install ufw
   ansible.builtin.apt:
@@ -50,4 +85,5 @@
   ansible.builtin.set_fact:
     manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
   loop:
+    - "MANUAL: Log into Proton VPN (first launch will prompt for your account)."
     - "MANUAL: Enable Proton VPN's Advanced kill switch — Settings → Features → Kill Switch → Advanced. This requires your Proton login and cannot be scripted. See firewall-vpn/README.md for how to actually verify it works (a real disconnect test), not just that the toggle is on."
