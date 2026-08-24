@@ -12,7 +12,7 @@ Written for a real-world setup: LUKS FDE already enabled, a YubiKey 5 NFC, a VPN
 - [Prerequisites](#prerequisites)
 - [Step 1 — Backups first](#step-1--backups-first) ✅ implemented
 - [Step 2 — Patch management](#step-2--patch-management) ✅ implemented
-- [Step 3 — YubiKey-backed login and sudo](#step-3--yubikey-backed-login-and-sudo)
+- [Step 3 — YubiKey-backed login and sudo](#step-3--yubikey-backed-login-and-sudo) ✅ implemented
 - [Step 4 — Firewall and VPN kill switch](#step-4--firewall-and-vpn-kill-switch)
 - [Step 5 — Browser hardening](#step-5--browser-hardening)
 - [Step 6 — Application isolation](#step-6--application-isolation)
@@ -60,13 +60,11 @@ Security patches, including kernel updates, need to actually land — not sit de
 
 ---
 
-## Step 3 — YubiKey-backed login and sudo
+## Step 3 — YubiKey-backed login and sudo ✅ implemented
 
-Extend hardware-backed MFA beyond just SSH commit signing to local `sudo` and login, using `pam_u2f`. Requires a recovery path set up before touching PAM — locking yourself out of an FDE + YubiKey box is a bad afternoon.
+Extend hardware-backed MFA beyond just SSH commit signing to local `sudo`, screen unlock, and the initial login screen, using `pam_u2f`. Requires a verified recovery path before touching PAM — locking yourself out of an FDE + YubiKey box is a bad afternoon.
 
-Also: register the YubiKey as a FIDO2/WebAuthn factor (not just TOTP) on key accounts, and keep a second registered key stored separately as backup.
-
-*Planned — not yet implemented in this repo.*
+**➡️ See [`yubikey-auth/`](./yubikey-auth/)** for the full implementation: PAM U2F rules added to `sudo`, screen unlock, and the LightDM greeter, each tested individually in increasing order of risk — with a root password and GRUB recovery mode verified working *before* any PAM file was touched.
 
 ---
 
@@ -132,7 +130,9 @@ Confirming swap lives inside the LUKS container rather than an unencrypted parti
 - [x] Backup restore tested successfully — see [`backups/`](./backups/)
 - [x] `unattended-upgrades` installed and enabled — see [`patch-management/`](./patch-management/)
 - [x] Security-only update scoping verified against a real backlog — see [`patch-management/`](./patch-management/)
-- [ ] YubiKey required for `sudo` (recovery path confirmed first)
+- [x] YubiKey required for `sudo` (recovery path confirmed first) — see [`yubikey-auth/`](./yubikey-auth/)
+- [x] YubiKey required for screen unlock — see [`yubikey-auth/`](./yubikey-auth/)
+- [x] YubiKey required for initial login (greeter) — see [`yubikey-auth/`](./yubikey-auth/)
 - [ ] YubiKey registered as FIDO2/WebAuthn on key accounts
 - [ ] Backup YubiKey registered and stored separately
 - [ ] UFW enabled, default-deny inbound
