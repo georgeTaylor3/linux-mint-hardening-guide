@@ -1,0 +1,36 @@
+---
+# Linux Mint hardening playbook
+#
+# Run locally on the machine being hardened:
+#   ansible-playbook playbook.yml --connection=local --ask-become-pass
+#
+# This automates the mechanical, idempotent parts of each step documented
+# in this repo's READMEs. It deliberately does NOT automate anything that
+# touches secrets, hardware (YubiKey touches), or account-specific
+# credentials (LUKS passphrases, GitHub/Proton logins, PAT tokens) — those
+# remain manual, with the playbook pointing you to the relevant README
+# section when it reaches that point.
+#
+# Roles are independent — run the whole play, or target one:
+#   ansible-playbook playbook.yml --connection=local --ask-become-pass --tags patch_management
+
+- name: Harden Linux Mint laptop
+  hosts: localhost
+  become: true
+  gather_facts: true
+
+  roles:
+    - role: patch_management
+      tags: [patch_management]
+    - role: firewall_vpn
+      tags: [firewall_vpn]
+    - role: yubikey_auth
+      tags: [yubikey_auth]
+    - role: backups_setup
+      tags: [backups_setup]
+
+  post_tasks:
+    - name: Print manual-step summary
+      ansible.builtin.debug:
+        msg: "{{ manual_steps_summary | default([]) }}"
+      when: manual_steps_summary is defined and manual_steps_summary | length > 0

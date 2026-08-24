@@ -1,0 +1,36 @@
+---
+# Mirrors yubikey-auth/README.md.
+# This role deliberately automates very little — YubiKey enrollment
+# requires a physical touch, and editing login-gating PAM files without
+# a verified recovery path first is how a machine becomes unbootable.
+# The playbook checks the recovery path precondition and then stops.
+
+- name: Install libpam-u2f
+  ansible.builtin.apt:
+    name: libpam-u2f
+    state: present
+
+- name: Check whether root account has a password set (required for GRUB recovery mode to work)
+  ansible.builtin.command: passwd -S root
+  register: root_passwd_status
+  changed_when: false
+
+- name: Warn if root account is locked
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: root account shows locked ('L'). GRUB recovery mode's
+      "drop to root shell" will NOT work until you set a root password
+      with `sudo passwd root`. Do this and TEST recovery mode before
+      proceeding — see yubikey-auth/README.md.
+  when: "'L' in root_passwd_status.stdout.split()[1]"
+
+- name: Record manual PAM setup steps
+  ansible.builtin.set_fact:
+    manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
+  loop:
+    - "MANUAL (do this yourself, in order, testing each before the next — see yubikey-auth/README.md):"
+    - "  1. Verify GRUB recovery mode actually gives you a root shell (reboot and test — do this BEFORE step 2)"
+    - "  2. Register your YubiKey: mkdir -p ~/.config/Yubico && pamu2fcfg > ~/.config/Yubico/u2f_keys && chmod 0644 ~/.config/Yubico/u2f_keys"
+    - "  3. Add pam_u2f to /etc/pam.d/sudo, test in a NEW terminal before closing the current one"
+    - "  4. Add pam_u2f to /etc/pam.d/cinnamon-screensaver (or your DE's equivalent), test by locking the screen"
+    - "  5. Add pam_u2f to /etc/pam.d/lightdm (after the nopasswdlogin check, before @include common-auth), test via a full log-out/log-in cycle — NOT just a reboot"

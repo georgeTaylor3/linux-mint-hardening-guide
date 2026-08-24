@@ -1,0 +1,52 @@
+---
+# Mirrors firewall-vpn/README.md.
+# UFW and sshd disable are automatable. The VPN kill switch is a GUI
+# setting tied to your Proton account — left as a manual step.
+
+- name: Install ufw
+  ansible.builtin.apt:
+    name: ufw
+    state: present
+
+- name: Set default deny incoming
+  community.general.ufw:
+    default: deny
+    direction: incoming
+
+- name: Set default allow outgoing
+  community.general.ufw:
+    default: allow
+    direction: outgoing
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+
+- name: Check what's listening for inbound connections
+  ansible.builtin.command: ss -tlnp
+  register: listening_services
+  changed_when: false
+
+- name: Show listening services for manual review
+  ansible.builtin.debug:
+    msg: "{{ listening_services.stdout_lines }}"
+
+- name: Disable ssh.socket if present (only if you never need inbound SSH — review the listing above first)
+  ansible.builtin.systemd:
+    name: ssh.socket
+    enabled: false
+    state: stopped
+  ignore_errors: true  # unit may not exist on all installs; not a failure
+
+- name: Disable ssh.service if present
+  ansible.builtin.systemd:
+    name: ssh.service
+    enabled: false
+    state: stopped
+  ignore_errors: true
+
+- name: Record manual VPN kill switch step
+  ansible.builtin.set_fact:
+    manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
+  loop:
+    - "MANUAL: Enable Proton VPN's Advanced kill switch — Settings → Features → Kill Switch → Advanced. This requires your Proton login and cannot be scripted. See firewall-vpn/README.md for how to actually verify it works (a real disconnect test), not just that the toggle is on."

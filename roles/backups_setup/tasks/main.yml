@@ -1,0 +1,30 @@
+---
+# Mirrors backups/README.md.
+# Only tooling installation is automated. Drive selection, LUKS
+# passphrases, Restic repo passwords, cloud bucket names, and Proton Pass
+# PAT setup are all machine/account-specific and deliberately manual.
+
+- name: Install restic and cryptsetup
+  ansible.builtin.apt:
+    name:
+      - restic
+      - cryptsetup
+    state: present
+
+- name: Install Proton Pass CLI
+  ansible.builtin.shell: |
+    curl -fsSL https://proton.me/download/pass-cli/install.sh | bash
+  args:
+    creates: "{{ ansible_env.HOME }}/.local/bin/pass-cli"
+
+- name: Record manual backup setup steps
+  ansible.builtin.set_fact:
+    manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
+  loop:
+    - "MANUAL — see backups/README.md for full detail:"
+    - "  1. Identify the backup drive with lsblk / nvme id-ctrl — DO NOT run luksFormat on a guess"
+    - "  2. sudo cryptsetup luksFormat /dev/<correct-device>, then open/mount it"
+    - "  3. restic init the local repo, store the password in Proton Pass"
+    - "  4. Create a GCS (or other) bucket, restic init the cloud repo, store that password too"
+    - "  5. Copy the local-backup.sh, cloud-backup.sh, restore.sh templates from this repo's backups/ folder, fill in your real values (bucket name, share ID)"
+    - "  6. Set up the cloud PAT (pass-cli pat create) and systemd timer per the README — this is the part with the most subtle gotchas (session isolation, --share-id vs --vault-name), read it carefully"
