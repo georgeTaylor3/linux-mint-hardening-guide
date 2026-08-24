@@ -30,7 +30,16 @@
       tags: [backups_setup]
 
   post_tasks:
-    - name: Print manual-step summary
+    - name: Print manual-step banner and summary
       ansible.builtin.debug:
-        msg: "{{ manual_steps_summary | default([]) }}"
+        msg: >-
+          {{ [
+            '',
+            '############################################################',
+            '#  PLAYBOOK FINISHED — MANUAL STEPS STILL REQUIRED         #',
+            '#  (secrets, hardware touches, and account logins are      #',
+            '#   never automated — this is intentional, see each        #',
+            '#   role folder README for why)                            #',
+            '############################################################'
+          ] + manual_steps_summary }}
       when: manual_steps_summary is defined and manual_steps_summary | length > 0

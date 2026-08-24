@@ -29,9 +29,13 @@
   ansible.builtin.set_fact:
     manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
   loop:
-    - "MANUAL (do this yourself, in order, testing each before the next — see yubikey-auth/README.md):"
+    - ""
+    - "════════════════════════════════════════════════════════"
+    - "  USER 2FA / YUBIKEY AUTH — manual steps (in order)"
+    - "════════════════════════════════════════════════════════"
     - "  1. Verify GRUB recovery mode actually gives you a root shell (reboot and test — do this BEFORE step 2)"
     - "  2. Register your YubiKey: mkdir -p ~/.config/Yubico && pamu2fcfg > ~/.config/Yubico/u2f_keys && chmod 0644 ~/.config/Yubico/u2f_keys"
     - "  3. Add pam_u2f to /etc/pam.d/sudo, test in a NEW terminal before closing the current one"
     - "  4. Add pam_u2f to /etc/pam.d/cinnamon-screensaver (or your DE's equivalent), test by locking the screen"
     - "  5. Add pam_u2f to /etc/pam.d/lightdm (after the nopasswdlogin check, before @include common-auth), test via a full log-out/log-in cycle — NOT just a reboot"
+    - "  Full detail: yubikey-auth/README.md"

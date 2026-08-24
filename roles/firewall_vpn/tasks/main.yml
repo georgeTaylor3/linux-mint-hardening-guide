@@ -85,5 +85,13 @@
   ansible.builtin.set_fact:
     manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
   loop:
-    - "MANUAL: Log into Proton VPN (first launch will prompt for your account)."
-    - "MANUAL: Enable Proton VPN's Advanced kill switch — Settings → Features → Kill Switch → Advanced. This requires your Proton login and cannot be scripted. See firewall-vpn/README.md for how to actually verify it works (a real disconnect test), not just that the toggle is on."
+    - ""
+    - "════════════════════════════════════════════════════════"
+    - "  VPN KILL SWITCH — manual steps (in order)"
+    - "════════════════════════════════════════════════════════"
+    - "  1. Open Proton VPN and log in (first launch will prompt for your account)"
+    - "  2. Settings → Features → Kill Switch → toggle on → select Advanced"
+    - "  3. Connect to a server, then curl ifconfig.me — should show the VPN's IP"
+    - "  4. Disconnect via the app, then curl ifconfig.me --max-time 5 — should FAIL completely (DNS resolution failure), not fall back to your real IP"
+    - "  5. Reconnect and re-confirm normal access"
+    - "  Full detail: firewall-vpn/README.md"
