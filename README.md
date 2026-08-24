@@ -13,7 +13,7 @@ Written for a real-world setup: LUKS FDE already enabled, a YubiKey 5 NFC, a VPN
 - [Step 1 — Backups first](#step-1--backups-first) ✅ implemented
 - [Step 2 — Patch management](#step-2--patch-management) ✅ implemented
 - [Step 3 — YubiKey-backed login and sudo](#step-3--yubikey-backed-login-and-sudo) ✅ implemented
-- [Step 4 — Firewall and VPN kill switch](#step-4--firewall-and-vpn-kill-switch)
+- [Step 4 — Firewall and VPN kill switch](#step-4--firewall-and-vpn-kill-switch) ✅ implemented
 - [Step 5 — Browser hardening](#step-5--browser-hardening)
 - [Step 6 — Application isolation](#step-6--application-isolation)
 - [Step 7 — Physical and firmware security](#step-7--physical-and-firmware-security)
@@ -68,11 +68,11 @@ Extend hardware-backed MFA beyond just SSH commit signing to local `sudo`, scree
 
 ---
 
-## Step 4 — Firewall and VPN kill switch
+## Step 4 — Firewall and VPN kill switch ✅ implemented
 
-Default-deny inbound via `ufw`, plus confirming the VPN's *permanent* kill switch (not just the standard one) is actually on and DNS leak protection is enabled.
+Default-deny inbound via `ufw`, plus confirming the VPN's *Advanced* kill switch (not just the standard one) is actually enforcing "no traffic without an active VPN connection" as policy.
 
-*Planned — not yet implemented in this repo.*
+**➡️ See [`firewall-vpn/`](./firewall-vpn/)** for the full implementation: UFW default-deny with an audit of every listening service, `sshd` fully disabled (not just firewalled) after confirming it was unused, and Proton VPN's Advanced kill switch verified with a real disconnect test — not just a settings toggle. Also documents a real app bug hit along the way (a corrupted local config value silently crashing the VPN app on launch) and how it was diagnosed and fixed.
 
 ---
 
@@ -133,10 +133,11 @@ Confirming swap lives inside the LUKS container rather than an unencrypted parti
 - [x] YubiKey required for `sudo` (recovery path confirmed first) — see [`yubikey-auth/`](./yubikey-auth/)
 - [x] YubiKey required for screen unlock — see [`yubikey-auth/`](./yubikey-auth/)
 - [x] YubiKey required for initial login (greeter) — see [`yubikey-auth/`](./yubikey-auth/)
+- [x] UFW enabled, default-deny inbound — see [`firewall-vpn/`](./firewall-vpn/)
+- [x] Unused inbound services disabled, not just firewalled — see [`firewall-vpn/`](./firewall-vpn/)
+- [x] VPN Advanced kill switch verified with a real disconnect test — see [`firewall-vpn/`](./firewall-vpn/)
 - [ ] YubiKey registered as FIDO2/WebAuthn on key accounts
 - [ ] Backup YubiKey registered and stored separately
-- [ ] UFW enabled, default-deny inbound
-- [ ] VPN permanent kill switch + DNS leak protection confirmed
 - [ ] Browser hardened (uBlock Origin, strict tracking protection, HTTPS-Only)
 - [ ] Flatpak available for lower-trust apps
 - [ ] AppArmor profiles reviewed/extended
