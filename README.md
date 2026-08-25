@@ -110,7 +110,7 @@ Default-deny inbound via `ufw`, plus confirming the VPN's *Advanced* kill switch
 
 ## Step 5 — Browser hardening
 
-uBlock Origin, Enhanced Tracking Protection set to Strict, HTTPS-Only mode, and an audit of installed extensions.
+**➡️ See [`browser-hardening/`](./browser-hardening/)** for the full implementation:Enhanced Tracking Protection set to Strict, HTTPS-Only mode, and an audit of installed extensions.
 
 *Planned — not yet implemented in this repo.*
 
