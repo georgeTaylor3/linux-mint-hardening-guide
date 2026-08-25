@@ -108,7 +108,7 @@ Default-deny inbound via `ufw`, plus confirming the VPN's *Advanced* kill switch
 
 ---
 
-## Step 5 — Browser hardening
+## Step 5 — Browser hardening ✅ implemented
 
 **➡️ See [`browser-hardening/`](./browser-hardening/)** for the full implementation:Enhanced Tracking Protection set to Strict, HTTPS-Only mode, and an audit of installed extensions.
 
