@@ -4,11 +4,12 @@
 # passphrases, Restic repo passwords, cloud bucket names, and Proton Pass
 # PAT setup are all machine/account-specific and deliberately manual.
 
-- name: Install restic and cryptsetup
+- name: Install restic, cryptsetup, and jq (jq is a Proton Pass CLI installer dependency)
   ansible.builtin.apt:
     name:
       - restic
       - cryptsetup
+      - jq
     state: present
 
 - name: Install Proton Pass CLI
