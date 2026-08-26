@@ -170,3 +170,45 @@ confirmed working before moving to the next:
 
 Recovery path (root password + GRUB recovery mode) was set up and
 verified working *before* any PAM file was modified.
+
+## Enrolling a YubiKey for a second user (without them logging in first)
+
+`scripts/enroll-yubikey.sh` registers a YubiKey for `pam_u2f` under a
+specific user account, run by an already-authenticated admin — useful
+when a second user can't log in yet because they have no key registered
+at all (a chicken-and-egg problem: the greeter requires a key, but they
+need to log in to register one).
+
+    sudo ./scripts/enroll-yubikey.sh <target-username>
+
+Insert the target user's YubiKey (only that key — unplug others to avoid
+ambiguity about which one gets registered) and touch it when prompted.
+
+### A real bug hit here, worth knowing about
+
+The first version of this script ran `pamu2fcfg` as the target user via
+`sudo -u <user>`, which seemed like the obviously-correct approach — the
+resulting file needs to be owned by that user, after all. It failed
+every time with `No device found`, despite `lsusb` clearly showing the
+key plugged in.
+
+The cause: `pamu2fcfg` needs live access to the YubiKey's HID/FIDO
+interface (`/dev/hidraw*`). That access is normally granted temporarily
+by `systemd-logind` to whichever user is actively logged into the
+current seat — not to an arbitrary target user with no session. Since
+the whole point of this script is enrolling a key for someone who
+**can't** log in yet, running the enrollment command as that user always
+fails this permission check, even though the physical key is right
+there.
+
+**The fix**: `pamu2fcfg` has a `-u`/`--username` flag exactly for this
+scenario. Run it as **root** instead (root always has device access,
+no seat ACL needed) and pass `-u <target-username>` to embed the correct
+username in the output rather than relying on `whoami`. The script then
+`chown`s the resulting file to the target user afterward.
+
+**Takeaway for future similar scripts**: any command that needs live
+hardware access (not just filesystem permissions) has to be evaluated
+separately from "which user should own the resulting file" — those are
+two different permission questions, and conflating them is an easy
+mistake to make.
