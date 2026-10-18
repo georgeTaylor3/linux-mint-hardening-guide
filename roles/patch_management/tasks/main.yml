@@ -35,6 +35,30 @@
     regexp: '^\/\/ ?Unattended-Upgrade::SyslogEnable'
     line: 'Unattended-Upgrade::SyslogEnable "true";'
 
+- name: Confirm the Ubuntu base is noble (51unattended-upgrades-mint names it)
+  ansible.builtin.command: grep -q '^UBUNTU_CODENAME=noble$' /etc/os-release
+  changed_when: false
+
+- name: Add Ubuntu, Mint, and third-party origins (the stock ones match nothing on Mint)
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/51unattended-upgrades-mint
+    content: |
+      // Linux Mint 22.x (Ubuntu noble base). The stock Allowed-Origins expand to
+      // "Linuxmint:zena", which matches neither the Ubuntu repositories nor the
+      // "linuxmint" origin. Update "noble" and "zena" when moving to Mint 23.
+      // Left for manual updates: google-cloud-cli, neovim (nightly PPA).
+      Unattended-Upgrade::Origins-Pattern {
+              "origin=Ubuntu,archive=noble-security";
+              "origin=Ubuntu,archive=noble-updates";
+              "origin=linuxmint,archive=zena";
+              "origin=Brave Software,archive=stable";
+              "origin=proton-gitlab,codename=stable,site=repo.protonvpn.com";
+              "origin=code stable,archive=stable";
+      };
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: Apply any currently pending updates now, rather than waiting for the timer
   ansible.builtin.apt:
     upgrade: dist

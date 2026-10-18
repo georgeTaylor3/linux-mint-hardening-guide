@@ -88,7 +88,7 @@ Full-disk encryption protects data at rest if the laptop is stolen. It does **no
 
 Security patches, including kernel updates, need to actually land — not sit deferred by an overly conservative update policy or a laptop that's rarely rebooted.
 
-**➡️ See [`patch-management/`](./patch-management/)** for the full implementation: `unattended-upgrades` scoped to security-only origins, verified against a real pending backlog on this machine, with automatic reboots deliberately left off and syslog logging enabled for auditability.
+**➡️ See [`patch-management/`](./patch-management/)** for the full implementation: `unattended-upgrades` for Ubuntu security and bug-fix updates plus the Mint, Brave, Proton VPN, and VS Code repositories, with automatic reboots left off and syslog logging enabled for auditability.
 
 ---
 
