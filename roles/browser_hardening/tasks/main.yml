@@ -24,18 +24,20 @@
     url: "https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg"
     dest: "/usr/share/keyrings/brave-browser-archive-keyring.gpg"
     mode: "0644"
+  when: not (offline | bool)
 
 - name: Add Brave's official APT repository
   ansible.builtin.apt_repository:
     repo: "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main"
     filename: brave-browser-release
     state: present
+    update_cache: "{{ not (offline | bool) }}"
 
 - name: Install Brave
   ansible.builtin.apt:
     name: brave-browser
     state: present
-    update_cache: true
+    update_cache: "{{ not (offline | bool) }}"
 
 - name: Ensure the managed policy directory exists
   ansible.builtin.file:

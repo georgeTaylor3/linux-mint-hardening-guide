@@ -12,11 +12,17 @@
       - jq
     state: present
 
+# Runs as the user who started the playbook (become: false), so pass-cli lands
+# in that user's ~/.local/bin. With become, ansible_env.HOME was /root.
 - name: Install Proton Pass CLI
   ansible.builtin.shell: |
+    set -o pipefail
     curl -fsSL https://proton.me/download/pass-cli/install.sh | bash
   args:
-    creates: "{{ ansible_env.HOME }}/.local/bin/pass-cli"
+    executable: /bin/bash
+    creates: "{{ lookup('env', 'HOME') }}/.local/bin/pass-cli"
+  become: false
+  when: not (offline | bool)
 
 - name: Record manual backup setup steps
   ansible.builtin.set_fact:

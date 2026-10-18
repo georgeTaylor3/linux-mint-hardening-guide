@@ -13,11 +13,18 @@
 #
 # Roles are independent — run the whole play, or target one:
 #   ansible-playbook playbook.yml --connection=local --ask-become-pass --tags patch_management
+#
+# Without internet, after installing the offline kit (backup-scripts
+# offline-kit/install-kit.sh), add -e offline=true. Steps that download or
+# refresh package lists are then skipped; the kit has already installed the
+# packages, keys, and sources they would fetch.
 
 - name: Harden Linux Mint laptop
   hosts: localhost
   become: true
   gather_facts: true
+  vars:
+    offline: false
 
   pre_tasks:
     # A LUKS-backed root typically shows up as sitting on a "crypt" mapper

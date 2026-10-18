@@ -7,7 +7,7 @@
       - unattended-upgrades
       - needrestart
     state: present
-    update_cache: true
+    update_cache: "{{ not (offline | bool) }}"
 
 - name: Enable periodic update checks and unattended-upgrades
   ansible.builtin.copy:
@@ -63,6 +63,7 @@
   ansible.builtin.apt:
     upgrade: dist
     update_cache: true
+  when: not (offline | bool)
 
 - name: Confirm apt-daily-upgrade.timer is enabled
   ansible.builtin.systemd:
