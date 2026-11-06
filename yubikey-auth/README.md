@@ -1,4 +1,5 @@
 # YubiKey-Backed Login, Unlock, and Sudo (PAM U2F)
+Fedora: see [fedora.md](fedora.md).
 
 This extends hardware-backed MFA — already used for SSH commit signing —
 to every local authentication boundary: the initial login screen, screen
