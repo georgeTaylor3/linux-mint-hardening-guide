@@ -31,13 +31,15 @@
     # device somewhere in its parent chain — e.g. partition -> crypt -> LVM
     # -> root. lsblk -s (inverse/ancestor mode) walks that full chain rather
     # than just reporting the leaf device's own type. This is a best-effort
+    # A Btrfs root appends the subvolume to the findmnt source, like /dev/mapper/x[/root], so the suffix is stripped first.
     # heuristic, not a guarantee — if it fires a false warning, verify
     # manually with `lsblk` and `cryptsetup status <device>` before trusting
     # either result.
     - name: Check whether the root filesystem sits on a LUKS-encrypted (crypt) device
       ansible.builtin.shell: |
         set -o pipefail
-        lsblk -s -no TYPE "$(findmnt -no SOURCE /)" 2>/dev/null | grep -c crypt || true
+        src="$(findmnt -no SOURCE /)"
+        lsblk -s -no TYPE "${src%%\[*}" 2>/dev/null | grep -c crypt || true
       args:
         executable: /bin/bash
       register: luks_check
