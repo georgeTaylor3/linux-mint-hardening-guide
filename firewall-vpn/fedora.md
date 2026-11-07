@@ -103,3 +103,5 @@ Not written yet for Fedora.
 ## Verified
 
 Fedora 44 KDE, 2026-11-06: with `kdeconnectd` listening on port 1716, a connection from another machine on the network to TCP port 1716 was blocked. In the control, TCP port 8000 was reachable while a rule allowed it and unreachable after the rule closed. A `firewall-cmd --reload` kept the Wi-Fi connection in the `home` zone.
+
+Fedora 44 KDE, 2026-11-06: after a reboot, the Wi-Fi connection was in the `home` zone, `FedoraWorkstation` had no ports, and `home` had `dhcpv6-client`, `mdns`, and `samba-client`.
