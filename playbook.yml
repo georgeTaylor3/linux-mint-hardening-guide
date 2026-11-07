@@ -1,5 +1,5 @@
 ---
-# Linux Mint hardening playbook
+# Linux hardening playbook (Linux Mint and Fedora)
 #
 # Run locally on the machine being hardened:
 #   ansible-playbook playbook.yml --connection=local --ask-become-pass
@@ -19,7 +19,7 @@
 # refresh package lists are then skipped; the kit has already installed the
 # packages, keys, and sources they would fetch.
 
-- name: Harden Linux Mint laptop
+- name: Harden Linux laptop
   hosts: localhost
   become: true
   gather_facts: true
@@ -55,9 +55,9 @@
           #  on the root filesystem.                                  #
           #                                                            #
           #  This CANNOT be added after installation without a full  #
-          #  wipe and reinstall. If this is a fresh Mint install and  #
-          #  you did not choose "Encrypt the new installation" during #
-          #  setup, stop now and reinstall with encryption enabled    #
+          #  wipe and reinstall. If this is a fresh install and you   #
+          #  did not enable disk encryption during setup, stop now    #
+          #  and reinstall with encryption enabled                    #
           #  before proceeding with anything else in this repo.       #
           #                                                            #
           #  If you're SURE this is intentional (e.g. testing in a    #

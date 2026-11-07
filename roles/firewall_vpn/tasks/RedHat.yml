@@ -1,0 +1,9 @@
+---
+# The Fedora tasks for this role are not written yet. This stub changes
+# nothing, so the full playbook can run on Fedora.
+
+- name: Report that the Fedora tasks are not written yet
+  ansible.builtin.debug:
+    msg: >-
+      Role firewall_vpn has no Fedora tasks yet and made no changes.
+      Fedora uses firewalld by default, not ufw. See firewall-vpn/README.md.
