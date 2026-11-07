@@ -1,0 +1,12 @@
+# Runs 15 minutes after login and at 09:00 and 21:00, after the
+# dnf5-automatic run (06:00 to 07:00).
+[Unit]
+Description=Check updates at login and twice a day
+
+[Timer]
+OnStartupSec=15min
+OnCalendar=*-*-* 09,21:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

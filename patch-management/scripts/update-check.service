@@ -1,0 +1,6 @@
+[Unit]
+Description=Check dnf5-automatic results and pending reboots
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/check-updates.sh
