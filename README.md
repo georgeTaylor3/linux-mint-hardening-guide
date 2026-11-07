@@ -2,7 +2,7 @@
 
 A hardening plan for a Linux daily-driver laptop: full-disk encryption, YubiKey-backed MFA, ransomware-resistant backups, and a locked-down network posture, without wrecking usability.
 
-Distributions: Linux Mint 22 (Cinnamon) and Fedora 44 (KDE Plasma). Each step has a guide per distribution where one exists. The Ansible playbook runs on both. On Fedora, the roles for patch management and the YubiKey checks apply changes. The other three roles print a message and make no changes.
+Distributions: Linux Mint 22 (Cinnamon) and Fedora 44 (KDE Plasma). Each step has a guide per distribution where one exists. The Ansible playbook runs on both. On Fedora, the roles for patch management, the YubiKey checks, and the firewall apply changes. The other two roles print a message and make no changes.
 
 ## Guides by distribution
 
@@ -11,7 +11,7 @@ Distributions: Linux Mint 22 (Cinnamon) and Fedora 44 (KDE Plasma). Each step ha
 | Backups | [guide](backups/README.md) | Not yet written |
 | Patch management | [guide](patch-management/mint.md) | [guide](patch-management/fedora.md) |
 | YubiKey login and sudo | [guide](yubikey-auth/mint.md) | [guide](yubikey-auth/fedora.md) |
-| Firewall and VPN | [guide](firewall-vpn/mint.md) | Not yet written |
+| Firewall and VPN | [guide](firewall-vpn/mint.md) | [guide](firewall-vpn/fedora.md) (firewall zones, VPN not yet written) |
 | Browser hardening | [guide](browser-hardening/mint.md) | Not yet written |
 
 ## Quick Start: Linux Mint
@@ -57,7 +57,8 @@ The Fedora `ansible` package includes the `community.general` collection that th
 |---|---|
 | `patch_management` | Installs `dnf5-plugin-automatic`, writes `/etc/dnf/automatic.conf` for security updates without automatic reboots, and enables `dnf5-automatic.timer` |
 | `yubikey_auth` | Installs `pam-u2f` and `pamu2fcfg`, reports the root password, `authselect`, and key file state, and prints the manual steps |
-| `firewall_vpn`, `browser_hardening`, `backups_setup` | Print a message and make no changes |
+| `firewall_vpn` | Removes the open high-port range and `ssh` from the firewalld zones, and prints the manual steps |
+| `browser_hardening`, `backups_setup` | Print a message and make no changes |
 
 The key requirement itself is manual. Follow [the Fedora YubiKey guide](yubikey-auth/fedora.md), and set a root password and test rescue mode before enabling it.
 

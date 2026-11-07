@@ -1,9 +1,68 @@
 ---
-# The Fedora tasks for this role are not written yet. This stub changes
-# nothing, so the full playbook can run on Fedora.
+# Mirrors firewall-vpn/fedora.md.
+# Fedora uses firewalld. The default zone, FedoraWorkstation, accepts every
+# inbound TCP and UDP port from 1025 to 65535. This role removes that range
+# and the ssh service from the zones. It changes zone contents only and never
+# touches interfaces: on a NetworkManager-controlled interface,
+# firewall-cmd --permanent --add-interface and --remove-interface rewrite
+# the connection profile.
+# Once sudo requires a YubiKey touch, run the playbook from a root shell
+# (sudo -i). Ansible runs sudo once per task.
 
-- name: Report that the Fedora tasks are not written yet
+- name: Install firewalld
+  ansible.builtin.dnf:
+    name: firewalld
+    state: present
+
+- name: Enable and start firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    enabled: true
+    state: started
+
+- name: Remove the open high-port range from the default zone
+  ansible.posix.firewalld:
+    zone: FedoraWorkstation
+    port: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: disabled
+  loop:
+    - 1025-65535/tcp
+    - 1025-65535/udp
+
+- name: Remove the ssh service from the default and home zones
+  ansible.posix.firewalld:
+    zone: "{{ item }}"
+    service: ssh
+    permanent: true
+    immediate: true
+    state: disabled
+  loop:
+    - FedoraWorkstation
+    - home
+
+- name: Read the active zones
+  ansible.builtin.command: firewall-cmd --get-active-zones
+  register: active_zones
+  changed_when: false
+  check_mode: false
+
+- name: Show the active zones
   ansible.builtin.debug:
-    msg: >-
-      Role firewall_vpn has no Fedora tasks yet and made no changes.
-      Fedora uses firewalld by default, not ufw. See firewall-vpn/README.md.
+    msg: "{{ active_zones.stdout_lines }}"
+
+- name: Record manual firewall steps
+  ansible.builtin.set_fact:
+    manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
+  loop:
+    - ""
+    - "════════════════════════════════════════════════════════"
+    - "  FIREWALL (Fedora) — manual steps"
+    - "════════════════════════════════════════════════════════"
+    - '  1. Assign your trusted network to the home zone (the name is machine-specific): nmcli connection modify "NAME" connection.zone home && nmcli connection up "NAME"'
+    - "  2. Do not use firewall-cmd --permanent --add-interface or --remove-interface for a NetworkManager-controlled interface: it rewrites the connection profile"
+    - "  3. Check: firewall-cmd --get-active-zones, then firewall-cmd --permanent --zone=FedoraWorkstation --list-all (no ports, no ssh)"
+    - "  4. Test from another machine: a listener on a port above 1024 must be unreachable (see firewall-vpn/fedora.md)"
+    - "  VPN kill switch on Fedora: not written yet"
+    - "  Full detail: firewall-vpn/fedora.md"
