@@ -1,0 +1,80 @@
+---
+# Mirrors yubikey-auth/fedora.md.
+# Fedora manages PAM through authselect, so the key requirement is one
+# authselect command and not a set of file edits. This role installs the
+# module, reports the current state, and prints the manual steps. It leaves
+# the key requirement off: enabling it before a key is registered and the
+# recovery path is tested risks a lockout.
+#
+# Once sudo requires a key touch, run the playbook from a root shell
+# (sudo -i) and not through become. Ansible runs sudo once per task, and
+# each run needs a touch and a password. The user whose key file is checked
+# comes from SUDO_USER, or from USER when the playbook is not run via sudo.
+
+- name: Install pam-u2f and pamu2fcfg
+  ansible.builtin.dnf:
+    name:
+      - pam-u2f
+      - pamu2fcfg
+    state: present
+
+- name: Check whether the root account has a password set (required for rescue mode)
+  ansible.builtin.command: passwd -S root
+  register: root_passwd_status
+  changed_when: false
+  check_mode: false
+
+- name: Warn if the root account is locked
+  ansible.builtin.debug:
+    msg: >-
+      WARNING: the root account shows locked ('L'). Rescue mode will not
+      open a shell until you set a root password with `sudo passwd root`.
+      Set one and test rescue mode before enabling the key requirement.
+      See yubikey-auth/fedora.md.
+  when: "'L' in root_passwd_status.stdout.split()[1]"
+
+- name: Read the current authselect profile
+  ansible.builtin.command: authselect current
+  register: authselect_current
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Find the user whose key file is checked
+  ansible.builtin.set_fact:
+    yubikey_target_user: "{{ lookup('env', 'SUDO_USER') | default(lookup('env', 'USER'), true) }}"
+
+- name: Look up that user's home directory
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ yubikey_target_user }}"
+
+- name: Check whether that user has a registered key
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['getent_passwd'][yubikey_target_user][4] }}/.config/Yubico/u2f_keys"
+  register: u2f_keys_file
+
+- name: Report the key requirement state
+  ansible.builtin.debug:
+    msg: >-
+      Key requirement (with-pam-u2f-2fa):
+      {{ 'enabled' if 'with-pam-u2f-2fa' in authselect_current.stdout else 'not enabled' }}.
+      Registered key file for {{ yubikey_target_user }}:
+      {{ 'present' if u2f_keys_file.stat.exists else 'missing' }}.
+
+- name: Record manual PAM setup steps
+  ansible.builtin.set_fact:
+    manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
+  loop:
+    - ""
+    - "════════════════════════════════════════════════════════"
+    - "  USER 2FA / YUBIKEY AUTH (Fedora) — manual steps (in order)"
+    - "════════════════════════════════════════════════════════"
+    - "  1. Set a root password (sudo passwd root) and store it. Test rescue mode BEFORE step 4: at GRUB press e, append systemd.unit=rescue.target to the linux line, boot, enter the disk passphrase and the root password"
+    - "  2. Register your YubiKey: mkdir -p ~/.config/Yubico && pamu2fcfg > ~/.config/Yubico/u2f_keys && chmod 0644 ~/.config/Yubico/u2f_keys && restorecon -Rv ~/.config/Yubico"
+    - "  3. Back up the PAM configuration: sudo cp -a /etc/authselect /root/authselect-before-u2f && sudo cp -a /etc/pam.d /root/pam.d-before-u2f"
+    - "  4. Open a root shell on a text console (Ctrl+Alt+F3, log in, su -) and leave it open, then run: sudo authselect enable-feature with-pam-u2f-2fa"
+    - "  5. Test sudo with the key, sudo WITHOUT the key (must fail), the lock screen, the login screen, and a text console login"
+    - "  6. Optional: sudo authselect disable-feature with-fingerprint (no reader), and sudo authselect enable-feature without-nullok after checking /etc/shadow for empty passwords"
+    - "  Re-running this playbook after step 4: use a root shell (sudo -i), because Ansible would need a key touch for every task"
+    - "  Full detail: yubikey-auth/fedora.md"

@@ -1,0 +1,30 @@
+---
+# Mirrors patch-management/fedora.md. Fully automatable, no secrets.
+# Applies security updates through dnf5-automatic. Other updates, and
+# reboots, stay manual: run `sudo dnf upgrade --refresh` and reboot when
+# needs-restarting asks for it.
+
+- name: Install dnf5-plugin-automatic
+  ansible.builtin.dnf:
+    name: dnf5-plugin-automatic
+    state: present
+    update_cache: "{{ not (offline | bool) }}"
+
+- name: Configure automatic security updates without automatic reboots
+  ansible.builtin.copy:
+    dest: /etc/dnf/automatic.conf
+    content: |
+      [commands]
+      upgrade_type = security
+      download_updates = yes
+      apply_updates = yes
+      reboot = never
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Confirm dnf5-automatic.timer is enabled
+  ansible.builtin.systemd:
+    name: dnf5-automatic.timer
+    enabled: true
+    state: started

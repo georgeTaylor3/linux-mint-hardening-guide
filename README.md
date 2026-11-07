@@ -1,42 +1,73 @@
-# Linux Mint Hardening Guide
+# Linux Hardening Guide
 
-A practical hardening plan for a Linux Mint daily-driver laptop — full-disk encryption, YubiKey-backed MFA, ransomware-resistant backups, and a locked-down network posture, without wrecking usability.
+A hardening plan for a Linux daily-driver laptop: full-disk encryption, YubiKey-backed MFA, ransomware-resistant backups, and a locked-down network posture, without wrecking usability.
 
-## Quick Start (new machine)
+Distributions: Linux Mint 22 (Cinnamon) and Fedora 44 (KDE Plasma). Each step has a guide per distribution where one exists. The Ansible playbook runs on both. On Fedora, the roles for patch management and the YubiKey checks apply changes. The other three roles print a message and make no changes.
 
-Clone this repo on the machine you're hardening and run the playbook to apply everything mechanical/idempotent in one pass:
+## Guides by distribution
 
-```bash
-sudo apt install ansible git
-git clone https://github.com/georgeTaylor3/linux-mint-hardening-guide.git
-cd linux-mint-hardening-guide
-ansible-galaxy collection install community.general
-ansible-playbook playbook.yml --connection=local --ask-become-pass --check   # dry run first
-ansible-playbook playbook.yml --connection=local --ask-become-pass           # apply for real
-```
+| Step | Linux Mint | Fedora |
+|---|---|---|
+| Backups | [guide](backups/README.md) | Not yet written |
+| Patch management | [guide](patch-management/mint.md) | [guide](patch-management/fedora.md) |
+| YubiKey login and sudo | [guide](yubikey-auth/mint.md) | [guide](yubikey-auth/fedora.md) |
+| Firewall and VPN | [guide](firewall-vpn/mint.md) | Not yet written |
+| Browser hardening | [guide](browser-hardening/mint.md) | Not yet written |
 
-The playbook handles package installs, config file edits, firewall rules, and service enable/disable — everything that's safe to script and idempotent to re-run. It **deliberately stops and prints instructions** for anything that needs a human: YubiKey enrollment, LUKS passphrases, GitHub/Proton logins, PAT tokens. Those steps are documented in each step's own README below — read them before running the playbook so the manual portions aren't a surprise.
+## Quick Start: Linux Mint
 
-**Full-disk encryption precondition:** before anything else runs, the playbook checks that the root filesystem sits on a LUKS-encrypted device and fails loudly if not — this can't be added after the fact without a full reinstall, so it's worth catching immediately rather than discovering it later. If you're intentionally running this somewhere FDE doesn't apply to your threat model (e.g. a VM whose underlying host storage is already encrypted), skip the check explicitly:
+Clone this repo on the machine you are hardening and run the playbook to apply the mechanical, repeatable steps in one pass:
 
-```bash
-ansible-playbook playbook.yml --connection=local --ask-become-pass --skip-tags luks_check
-```
+    sudo apt install ansible git
+    git clone https://github.com/georgeTaylor3/linux-mint-hardening-guide.git
+    cd linux-mint-hardening-guide
+    ansible-galaxy collection install community.general
+    ansible-playbook playbook.yml --connection=local --ask-become-pass --check   # dry run first
+    ansible-playbook playbook.yml --connection=local --ask-become-pass           # apply
+
+The playbook handles package installs, config file edits, firewall rules, and service enable and disable, which are safe to script and repeat. It stops and prints instructions for anything that needs a person: YubiKey enrollment, LUKS passphrases, GitHub and Proton logins, and PAT tokens. Read each step's guide before running the playbook so the manual parts are not a surprise.
+
+**Full-disk encryption precondition:** before anything else runs, the playbook checks that the root filesystem sits on a LUKS-encrypted device and fails if not. Encryption cannot be added after installation without a reinstall. To skip the check where full-disk encryption does not apply to your threat model, for example a VM on an encrypted host:
+
+    ansible-playbook playbook.yml --connection=local --ask-become-pass --skip-tags luks_check
 
 | Role | Automated | Manual (playbook prints instructions) |
 |---|---|---|
-| `patch_management` | Everything | — |
-| `firewall_vpn` | Proton VPN install, UFW rules, sshd disable | Proton VPN login + Advanced kill switch (requires your Proton account) |
-| `yubikey_auth` | Package install, recovery-path precondition check | All PAM edits and YubiKey enrollment — hardware/interactive by nature |
+| `patch_management` | Everything | None |
+| `firewall_vpn` | Proton VPN install, UFW rules, sshd disable | Proton VPN login and Advanced kill switch (requires your Proton account) |
+| `yubikey_auth` | Package install, recovery-path precondition check | All PAM edits and YubiKey enrollment (hardware and interactive) |
 | `backups_setup` | Tool installation | Drive selection, LUKS setup, repo passwords, bucket creation, PAT setup |
+| `browser_hardening` | Brave install, managed policy for WebRTC and HTTPS-only | Per-preference settings in the browser UI |
 
-No secrets are ever stored in the playbook or its output — anything secret-touching is manual by design.
+No secrets are stored in the playbook or its output. Anything that touches a secret is manual.
+
+## Quick Start: Fedora
+
+Enable disk encryption in the installer ("Encrypt my data"), because it cannot be added afterward without a reinstall.
+
+    sudo dnf install ansible git
+    git clone https://github.com/georgeTaylor3/linux-mint-hardening-guide.git
+    cd linux-mint-hardening-guide
+    ansible-playbook playbook.yml --connection=local --ask-become-pass --check   # dry run first
+    ansible-playbook playbook.yml --connection=local --ask-become-pass           # apply
+
+The Fedora `ansible` package includes the `community.general` collection that the Debian-family tasks reference. With `ansible-core` alone, run `ansible-galaxy collection install community.general` first.
+
+| Role | On Fedora |
+|---|---|
+| `patch_management` | Installs `dnf5-plugin-automatic`, writes `/etc/dnf/automatic.conf` for security updates without automatic reboots, and enables `dnf5-automatic.timer` |
+| `yubikey_auth` | Installs `pam-u2f` and `pamu2fcfg`, reports the root password, `authselect`, and key file state, and prints the manual steps |
+| `firewall_vpn`, `browser_hardening`, `backups_setup` | Print a message and make no changes |
+
+The key requirement itself is manual. Follow [the Fedora YubiKey guide](yubikey-auth/fedora.md), and set a root password and test rescue mode before enabling it.
+
+Once `sudo` requires a YubiKey touch, run the playbook from a root shell (`sudo -i`). Ansible calls `sudo` once per task, and each call needs a touch and a password.
 
 ---
 
-**Everything below this point is the plan and the detailed how-to** — read it if you want to understand *why* each step exists, or if you're doing a step by hand instead of via the playbook. Steps that have been fully implemented and tested link out to their own folder with the actual scripts, configs, and detailed how-to. Steps without a folder are planned but not yet built.
+**Everything below this point is the plan and the how-to for each step.** Steps with a folder have scripts, configs, and a guide per distribution. Steps without a folder are planned and not yet built.
 
-Written for a real-world setup: LUKS FDE already enabled, a YubiKey 5 NFC, a VPN used without exception, and a spare internal drive available for backups. Adapt the specifics (drive names, package manager) to your own hardware.
+The plan assumes LUKS full-disk encryption enabled at install, a YubiKey 5 NFC, a VPN used without exception, and a spare internal drive for backups. Adapt drive names and package commands to your hardware.
 
 ## Contents
 

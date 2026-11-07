@@ -4,7 +4,7 @@
 #
 # Usage: sudo ./enroll-yubikey.sh <target-username>
 #
-# Must be run with sudo, as an already-authenticated admin user (e.g. gorg).
+# Must be run with sudo, as an already-authenticated admin user (e.g. admin).
 # Writes to the TARGET user's own home directory with correct ownership,
 # so pam_u2f (sudo, screen unlock, login greeter) recognizes the key for
 # that account.
