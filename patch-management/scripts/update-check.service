@@ -3,4 +3,5 @@ Description=Check dnf5-automatic results and pending reboots
 
 [Service]
 Type=oneshot
+ExecStartPre=-/usr/bin/nm-online -q -t 60
 ExecStart=%h/.local/bin/check-updates.sh

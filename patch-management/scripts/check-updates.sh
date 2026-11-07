@@ -34,7 +34,7 @@ mkdir -p "$STATE_DIR"
 
 warn() {  # key subject body
     notify-send -u critical "$2" "$3" 2>/dev/null || true
-    if [ -n "$ALERT" ]; then "$ALERT" "$1" "$2" "$3" || true; fi
+    if [ -n "$ALERT" ]; then "$ALERT" "$1" "$2" "$3" || echo "update-check: alert command failed for $1" >&2; fi
 }
 
 if [ "$(systemctl show -p LoadState --value "$UNIT" 2>/dev/null)" != "loaded" ]; then
