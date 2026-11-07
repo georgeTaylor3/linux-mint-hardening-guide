@@ -6,6 +6,8 @@ Tested on Fedora 44 KDE with dnf5-plugin-automatic 5.4.6.0.
 
 Updates that carry a security advisory download and install daily without a prompt. Other updates and reboots stay manual.
 
+How the timers, the check script, and the alerts connect: [update-workflow.md](update-workflow.md).
+
 ## Differences from the Mint guide
 
 - Fedora uses DNF5 and `dnf5-automatic` in place of `unattended-upgrades`. There is no origins pattern to maintain. The setting `upgrade_type = security` selects updates that carry a security advisory.
