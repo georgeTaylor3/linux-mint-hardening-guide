@@ -52,6 +52,103 @@
   ansible.builtin.debug:
     msg: "{{ active_zones.stdout_lines }}"
 
+# Proton VPN command-line client (see firewall-vpn/fedora.md).
+# Settings and their defaults:
+#   proton_release_version          repository package version (1.0.5-1)
+#   proton_repo_key_fingerprint     signing key fingerprint for this Fedora release
+#   proton_install_weak_deps        install weak dependencies (false is untested)
+#   proton_disable_split_tunneling  keep the split-tunneling helper from starting
+# The role does not sign in, does not connect, and does not configure the
+# kill switch. The drop-in is created before the package install so that the
+# package's post-install start finds the condition unmet.
+
+- name: Proton VPN - resolve settings
+  ansible.builtin.set_fact:
+    proton_release_version: "{{ proton_release_version | default('1.0.5-1') }}"
+    proton_install_weak_deps: "{{ proton_install_weak_deps | default(true) }}"
+    proton_disable_split_tunneling: "{{ proton_disable_split_tunneling | default(true) }}"
+    proton_repo_key_fingerprint: >-
+      {{ proton_repo_key_fingerprint
+      | default({'44': '6929133BDE1CE1CFA9EDB286D84176F6844830D4'}[ansible_facts['distribution_major_version']] | default('')) }}
+
+- name: Proton VPN - require a signing key fingerprint
+  ansible.builtin.assert:
+    that:
+      - proton_repo_key_fingerprint | length == 40
+    fail_msg: >-
+      No Proton signing key fingerprint is recorded for Fedora {{ ansible_facts['distribution_major_version'] }}.
+      Compare the fingerprint on Proton's Fedora install page with the key,
+      then set proton_repo_key_fingerprint.
+
+- name: Proton VPN - create the split-tunneling helper drop-in directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/me.proton.vpn.split_tunneling.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: proton_disable_split_tunneling | bool
+
+- name: Proton VPN - keep the split-tunneling helper from starting
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/me.proton.vpn.split_tunneling.service.d/10-disabled.conf
+    content: |
+      [Unit]
+      ConditionPathExists=/etc/proton-vpn-split-tunneling.enabled
+    owner: root
+    group: root
+    mode: "0644"
+  when: proton_disable_split_tunneling | bool
+  register: proton_helper_dropin
+
+- name: Proton VPN - reload systemd after the drop-in changes
+  ansible.builtin.systemd:
+    daemon_reload: true
+  when: proton_helper_dropin is changed
+
+- name: Proton VPN - check for the repository package
+  ansible.builtin.command: rpm -q protonvpn-stable-release
+  register: proton_release_rpm
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Proton VPN - download the repository package
+  ansible.builtin.get_url:
+    url: "https://repo.protonvpn.com/fedora-{{ ansible_facts['distribution_major_version'] }}-stable/protonvpn-stable-release/protonvpn-stable-release-{{ proton_release_version }}.noarch.rpm"
+    dest: "/var/tmp/protonvpn-stable-release-{{ proton_release_version }}.noarch.rpm"
+    mode: "0644"
+  when: proton_release_rpm.rc != 0
+
+- name: Proton VPN - import the repository signing key
+  ansible.builtin.rpm_key:
+    key: "https://repo.protonvpn.com/fedora-{{ ansible_facts['distribution_major_version'] }}-stable/public_key.asc"
+    fingerprint: "{{ proton_repo_key_fingerprint }}"
+    state: present
+
+- name: Proton VPN - install the repository package
+  ansible.builtin.dnf:
+    name: "/var/tmp/protonvpn-stable-release-{{ proton_release_version }}.noarch.rpm"
+    state: present
+  when: proton_release_rpm.rc != 0
+
+- name: Proton VPN - install the command-line client
+  ansible.builtin.dnf:
+    name: proton-vpn-cli
+    state: present
+    install_weak_deps: "{{ proton_install_weak_deps | bool }}"
+
+- name: Proton VPN - read the installed client version
+  ansible.builtin.command: rpm -q proton-vpn-cli
+  register: proton_cli_version
+  changed_when: false
+  failed_when: false
+  check_mode: false
+
+- name: Proton VPN - show the installed client version
+  ansible.builtin.debug:
+    msg: "{{ proton_cli_version.stdout }}"
+
 - name: Record manual firewall steps
   ansible.builtin.set_fact:
     manual_steps_summary: "{{ manual_steps_summary | default([]) + [item] }}"
@@ -64,5 +161,10 @@
     - "  2. Do not use firewall-cmd --permanent --add-interface or --remove-interface for a NetworkManager-controlled interface: it rewrites the connection profile"
     - "  3. Check: firewall-cmd --get-active-zones, then firewall-cmd --permanent --zone=FedoraWorkstation --list-all (no ports, no ssh)"
     - "  4. Test from another machine: a listener on a port above 1024 must be unreachable (see firewall-vpn/fedora.md)"
-    - "  VPN kill switch on Fedora: not written yet"
+    - ""
+    - "  PROTON VPN (Fedora) - manual steps"
+    - "  1. Compare the signing key fingerprint on protonvpn.com with proton_repo_key_fingerprint"
+    - "  2. protonvpn signin YOUR_PROTON_USERNAME (password, then security key or authenticator code)"
+    - "  3. protonvpn connect, then run the checks in firewall-vpn/fedora.md"
+    - "  4. This role does not configure the kill switch (see firewall-vpn/fedora.md)"
     - "  Full detail: firewall-vpn/fedora.md"

@@ -3,4 +3,4 @@
 Inbound firewall policy, disabled SSH server, and a VPN kill switch.
 
 - [Linux Mint](mint.md)
-- [Fedora](fedora.md): firewall zones. The VPN part is not yet written.
+- [Fedora](fedora.md): firewall zones and the Proton VPN command-line client.
